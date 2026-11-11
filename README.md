@@ -1,6 +1,6 @@
 # Hybrid AMR Profiler & Automated R Visualization Pipeline
 
-A production-ready bioinformatics pipeline for hybrid bacterial assembly and resistome profiling.
+A  bioinformatics pipeline for hybrid bacterial assembly and resistome profiling.
 
 ## Validation Datasets
 - **ERR3772937**
