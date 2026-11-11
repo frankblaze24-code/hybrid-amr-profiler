@@ -1,1 +1,5 @@
 data/
+megahit_out/
+hybrid_assembly_output/
+outputs/*.html
+outputs/*.zip
