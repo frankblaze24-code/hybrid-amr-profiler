@@ -1,45 +1,33 @@
-#!/usr/bin/env Rscript
+library(readr)
+library(dplyr)
+library(ggplot2)
 
-suppressPackageStartupMessages({
-  library(tidyverse)
-})
-
-# Load ABRicate results (supports fallback/sample data if table is empty)
-args <- commandArgs(trailingOnly = TRUE)
-input_file <- if(length(args) > 0) args[1] else "../outputs/abricate_card_results.tsv"
-
-df <- read_delim(input_file, delim = "\t", show_col_types = FALSE)
-
-if(nrow(df) == 0 || !("GENE" %in% colnames(df))) {
-  message("No genes detected in input file or empty table. Generating demonstration summary plot...")
-  # Demo data representing typical K. pneumoniae resistome profile for portfolio illustration
-  df <- tibble(
-    GENE = c("blaCTX-M-15", "blaOXA-1", "aac(6')-Ib-cr", "qnrS1", "sul1", "dfrA14", "tet(A)"),
-    percent_identity = c(100, 99.8, 100, 99.5, 100, 99.7, 99.9),
-    DATABASE = c("card", "card", "card", "card", "card", "card", "card")
-  )
-} else {
-  # Standardize ABRicate column name if loaded from file
-  df <- df %>% rename(percent_identity = `%IDENTITY`)
+# Handle file path whether executed from root or scripts/ directory
+input_file <- "outputs/abricate_card_results.tsv"
+if (!file.exists(input_file)) {
+  input_file <- "../outputs/abricate_card_results.tsv"
 }
 
-# Plot gene frequency / identity
-p <- ggplot(df, aes(x = reorder(GENE, percent_identity), y = percent_identity, fill = DATABASE)) +
-  geom_col(width = 0.6) +
-  coord_flip() +
-  theme_minimal(base_size = 12) +
-  labs(
-    title = "AMR Gene Profile - Hybrid Pipeline Summary",
-    subtitle = "Detected Resistance Determinants (CARD / ResFinder)",
-    x = "Resistance Gene",
-    y = "Percent Identity (%)",
-    fill = "Database"
-  ) +
-  ylim(0, 100) +
-  theme(
-    plot.title = element_text(face = "bold", size = 14),
-    panel.grid.minor = element_blank()
-  )
+if (!file.exists(input_file)) {
+  stop("Input file abricate_card_results.tsv not found in outputs/ or ../outputs/")
+}
 
-ggsave("../outputs/resistome_profile_plot.png", p, width = 8, height = 5, dpi = 300)
-message("Successfully generated resistome plot at ../outputs/resistome_profile_plot.png")
+data <- read_delim(input_file, delim = "\t", show_col_types = FALSE)
+
+# Generate resistome profile plot
+if ("GENE" %in% colnames(data) | "%COVERAGE" %in% colnames(data)) {
+  p <- ggplot(data, aes(x = GENE, y = `%IDENTITY`, fill = `%COVERAGE`)) +
+    geom_col() +
+    coord_flip() +
+    theme_minimal() +
+    labs(title = "Bacterial Resistome Profile (CARD Database)",
+         x = "Resistance Gene",
+         y = "Sequence Identity (%)")
+  
+  output_plot <- "outputs/resistome_heatmap.png"
+  if (!dir.exists("outputs")) dir.create("outputs")
+  ggsave(output_plot, plot = p, width = 8, height = 6)
+  cat("Resistome plot successfully saved to:", output_plot, "\n")
+} else {
+  cat("Data loaded successfully. Ready for downstream plotting.\n")
+}
